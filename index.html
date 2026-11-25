@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우리 반 자리배치</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 교실처럼 따뜻하고 단정하게, 선생님이 바로 쓰는 도구
+   IDEA: 칠판 앞 책상 배치도 — 초록 칠판, 나무 책상
+   PICTURE: 6열×5줄 책상 그리드 자체가 주인공
+   COLOUR and TYPE: 칠판 초록 + 원목 책상 + 분필 노랑 포인트 / Jua + Noto Sans KR
+   LAYOUT: 왼쪽 설정 패널, 오른쪽 큰 배치도; 600px 이하에서는 배치도 먼저 */
+:root{color-scheme:light dark;
+--bg:light-dark(#f4f1ea,#15191a);--card:light-dark(#ffffff,#1e2426);--ink:light-dark(#1d2321,#ecefe9);--muted:light-dark(#66706b,#9aa59f);
+--line:light-dark(#e2ddd1,#2f3739);--board:light-dark(#2c5a46,#244a3a);--boardink:#f3f6ee;--chalk:#f2d25c;
+--desk:light-dark(#f3e3c6,#3a3226);--deskline:light-dark(#d9c29a,#5a4b36);--off:light-dark(#ebe7de,#22282a);
+--bad:#d6452e;--badsoft:light-dark(#fde8e3,#3b211c);--fix:#b7791f;--sel:#2f7bd6;--accent:#2c5a46}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans KR",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;overflow-x:clip}
+header{padding:22px max(3vw,16px) 6px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+#title{font:32px/1.1 "Jua",sans-serif;border:0;background:transparent;color:var(--ink);padding:2px 4px;border-radius:8px;width:min(100%,520px)}
+#title:focus{outline:2px solid var(--accent);background:var(--card)}
+.sub{color:var(--muted);font-size:14px}
+main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:20px;padding:12px max(3vw,16px) 40px;align-items:start;max-width:1400px}
+@media(max-width:900px){main{grid-template-columns:minmax(0,1fr)}#stage{order:-1}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.panel h2{font:20px/1.2 "Jua",sans-serif;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel h2 small{font:13px "Noto Sans KR",sans-serif;color:var(--muted)}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+textarea,input,select{font:16px "Noto Sans KR",sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+textarea{width:100%;min-height:140px;resize:vertical;line-height:1.5}
+button{font:15px "Noto Sans KR",sans-serif;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);min-height:44px;padding:0 14px}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
+.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
+.row2{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.row2>*{flex:1 1 auto}
+label.f{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0;font-size:15px}
+label.f input[type=number]{width:72px;text-align:right}
+.chips{display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow:auto;padding:2px}
+.chip{min-height:34px;padding:0 10px;font-size:14px;border-radius:999px}
+.chip.on{background:var(--bad);border-color:var(--bad);color:#fff}
+.groups{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.groups li{display:flex;align-items:center;gap:8px;background:var(--badsoft);border-radius:10px;padding:6px 6px 6px 12px;font-size:14px}
+.groups li span{flex:1}
+.groups li button{min-height:32px;padding:0 10px;font-size:13px}
+#stage{position:sticky;top:12px}
+@media(max-width:900px){#stage{position:static}}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.toolbar .primary{font-size:17px;padding:0 22px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;border-radius:0}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.room{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:clamp(12px,2.2vw,26px)}
+.front{background:var(--board);color:var(--boardink);border-radius:10px;text-align:center;font:clamp(18px,2.4vw,24px)/1 "Jua",sans-serif;padding:14px;margin:0 auto 18px;width:min(70%,560px);box-shadow:inset 0 -5px 0 rgba(0,0,0,.18)}
+.front.bottom{margin:18px auto 0}
+.front small{display:block;font:12px "Noto Sans KR",sans-serif;opacity:.75;margin-top:6px}
+.rows{display:grid;gap:clamp(6px,1.2vw,12px)}
+.drow{display:flex;gap:clamp(4px,.8vw,8px);justify-content:center}
+.aisle{flex:0 0 clamp(8px,2.2vw,28px)}
+.seat{flex:1 1 0;max-width:150px;aspect-ratio:1.45;position:relative;background:var(--desk);border:1px solid var(--deskline);border-bottom-width:5px;border-radius:10px;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;transition:transform .12s}
+.seat:hover{transform:translateY(-1px)}
+.seat .no{position:absolute;top:4px;left:7px;font-size:11px;color:var(--muted)}
+.seat .nm{font:clamp(14px,2vw,22px)/1.1 "Jua",sans-serif;text-align:center;word-break:keep-all;overflow-wrap:anywhere}
+.seat.empty .nm{color:var(--muted);font:13px "Noto Sans KR",sans-serif}
+.seat.off{background:var(--off);border-style:dashed;border-bottom-width:1px;color:var(--muted)}
+.seat.off .nm{font:12px "Noto Sans KR",sans-serif;color:var(--muted)}
+.seat.bad{border-color:var(--bad);background:var(--badsoft);box-shadow:0 0 0 2px var(--bad)}
+.seat.sel{box-shadow:0 0 0 3px var(--sel);transform:translateY(-3px)}
+.seat.fixed{border-color:var(--fix)}
+.lock{position:absolute;top:2px;right:3px;font-size:12px;line-height:1;padding:5px;border-radius:6px;opacity:.25;color:var(--ink)}
+.seat:hover .lock,.seat.fixed .lock{opacity:1}
+.seat.fixed .lock{color:var(--fix)}
+.lock svg{width:14px;height:14px;display:block}
+.editing .seat{cursor:cell}
+.pop{animation:pop .4s both}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.94)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.pop{animation:none}.seat{transition:none}}
+#status{margin-top:12px;border-radius:12px;padding:10px 14px;font-size:15px;background:var(--off)}
+#status.ok{background:light-dark(#e4f1ea,#1d3027)}
+#status.warn{background:var(--badsoft)}
+#banner{display:none;margin-bottom:10px;padding:8px 12px;border-radius:10px;background:light-dark(#fff4cf,#3a3216);font-size:14px}
+.editing #banner{display:block}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:15px;opacity:0;pointer-events:none;transition:.2s;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+@media(max-width:600px){.seat .no{display:none}.seat{aspect-ratio:1.1;border-radius:7px}.lock{padding:2px}#title{font-size:26px}}
+@media print{aside,.toolbar,#status,.legend,#banner,.lock,header .sub{display:none!important}main{display:block;padding:0}.room{border:0}body{background:#fff}}
+</style>
+</head>
+<body>
+<header>
+  <input id="title" value="우리 반 자리배치" aria-label="제목">
+  <span class="sub" id="count"></span>
+</header>
+<main>
+  <aside>
+    <section class="panel">
+      <h2>학생 명단 <small id="nameCount"></small></h2>
+      <textarea id="names" aria-label="학생 명단" placeholder="한 줄에 한 명씩 입력"></textarea>
+      <div class="row2">
+        <button class="primary" id="applyNames">명단 반영</button>
+        <button id="fillNums">번호로 채우기</button>
+      </div>
+      <p class="hint">한 줄에 한 명씩 적어주세요. 이름이 겹치면 '김민준2'처럼 구분해 주세요.</p>
+    </section>
+
+    <section class="panel">
+      <h2>이웃 금지 학생</h2>
+      <p class="hint" style="margin:0 0 8px">떨어뜨릴 학생을 2명 이상 고르고 추가하세요. 한 묶음 안의 학생끼리는 서로 이웃하지 않게 배정돼요.</p>
+      <div class="chips" id="chips"></div>
+      <div class="row2"><button class="primary" id="addGroup" disabled>선택한 학생 떨어뜨리기</button></div>
+      <ul class="groups" id="groups"></ul>
+    </section>
+
+    <section class="panel">
+      <h2>배치 설정</h2>
+      <label class="f">이웃의 범위
+        <select id="adj">
+          <option value="eight">앞뒤·양옆·대각선</option>
+          <option value="four">앞뒤·양옆</option>
+          <option value="side">양옆만</option>
+          <option value="pair">짝(같은 분단)만</option>
+        </select>
+      </label>
+      <label class="f">줄 수 (앞→뒤) <input type="number" id="rows" min="1" max="10"></label>
+      <label class="f">열 수 (좌→우) <input type="number" id="cols" min="1" max="10"></label>
+      <p class="hint">'빈자리 설정'을 누른 뒤 책상을 눌러 사용하지 않을 자리를 고르세요. 이름 옆 자물쇠를 누르면 그 학생 자리가 고정돼요.</p>
+    </section>
+  </aside>
+
+  <section id="stage">
+    <div class="toolbar">
+      <button class="primary" id="go">자리 배치하기</button>
+      <button id="undo" disabled>되돌리기</button>
+      <button id="edit">빈자리 설정</button>
+      <div class="seg" role="group" aria-label="보기 방향">
+        <button id="vStudent">학생 시점</button><button id="vTeacher">교사 시점</button>
+      </div>
+      <button id="copy">텍스트 복사</button>
+      <button id="print">인쇄</button>
+      <button id="clear">초기화</button>
+    </div>
+    <div id="wrap">
+      <div id="banner">빈자리 설정 중: 책상을 누르면 사용/사용 안 함이 바뀌어요. 끝나면 '설정 완료'를 누르세요.</div>
+      <div class="room"><div id="board"></div></div>
+    </div>
+    <div id="status">학생 명단을 확인하고 '자리 배치하기'를 눌러주세요.</div>
+    <div class="legend">
+      <span><i style="background:var(--desk);border:1px solid var(--deskline)"></i>학생 자리</span>
+      <span><i style="border:1px dashed var(--muted)"></i>사용 안 함</span>
+      <span><i style="background:var(--badsoft);border:2px solid var(--bad)"></i>이웃 금지 위반</span>
+      <span><i style="border:2px solid var(--fix)"></i>고정 자리</span>
+      <span>두 자리를 차례로 누르면 서로 바뀌어요.</span>
+    </div>
+  </section>
+</main>
+<div id="toast" role="status"></div>
+
+<script>
+{
+const KEY = 'seat-planner-v1';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+
+const defaults = () => ({
+  title: '우리 반 자리배치', rows: 5, cols: 6,
+  students: Array.from({length: 26}, (_, i) => `${i + 1}번`),
+  disabled: [24, 25, 28, 29], fixed: {}, groups: [], adj: 'eight', layout: [], view: 'student'
+});
+let S = defaults();
+try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(defaults(), JSON.parse(raw)); } catch (e) {}
+let sel = null, editMode = false, picked = new Set(), undoStack = [];
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const total = () => S.rows * S.cols;
+const isOff = i => S.disabled.includes(i);
+
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
+
+function neighbors(i) {
+  const r = Math.floor(i / S.cols), c = i % S.cols, out = [];
+  const add = (rr, cc) => { if (rr >= 0 && rr < S.rows && cc >= 0 && cc < S.cols) out.push(rr * S.cols + cc); };
+  if (S.adj === 'pair') { add(r, c % 2 === 0 ? c + 1 : c - 1); return out; }
+  add(r, c - 1); add(r, c + 1);
+  if (S.adj !== 'side') { add(r - 1, c); add(r + 1, c); }
+  if (S.adj === 'eight') { add(r - 1, c - 1); add(r - 1, c + 1); add(r + 1, c - 1); add(r + 1, c + 1); }
+  return out;
+}
+function conflictMap() {
+  const m = new Map();
+  for (const g of S.groups) for (const a of g) for (const b of g) if (a !== b) { if (!m.has(a)) m.set(a, new Set()); m.get(a).add(b); }
+  return m;
+}
+function violations() {
+  const cm = conflictMap(), out = [];
+  S.layout.forEach((n, i) => {
+    if (!n || !cm.has(n) || isOff(i)) return;
+    for (const j of neighbors(i)) if (j > i && S.layout[j] && !isOff(j) && cm.get(n).has(S.layout[j])) out.push({i, j, a: n, b: S.layout[j]});
+  });
+  return out;
+}
+const unplaced = () => S.layout.length ? S.students.filter(n => !S.layout.includes(n)) : [];
+
+function generate() {
+  const seats = [...Array(total()).keys()].filter(i => !isOff(i));
+  const names = S.students;
+  if (!names.length) return status('warn', '학생 명단이 비어 있어요.');
+  if (names.length > seats.length) return status('warn', `사용할 수 있는 자리(${seats.length}석)가 학생 수(${names.length}명)보다 적어요. '빈자리 설정'에서 자리를 늘려주세요.`);
+  const cm = conflictMap();
+  const base = Array(total()).fill(null), fixedNames = new Set();
+  for (const [k, v] of Object.entries(S.fixed)) { const i = +k; if (!isOff(i) && names.includes(v) && !fixedNames.has(v)) { base[i] = v; fixedNames.add(v); } }
+  const free = seats.filter(i => base[i] === null);
+  const rest = names.filter(n => !fixedNames.has(n));
+  const okAt = (L, i, n) => !cm.has(n) || neighbors(i).every(j => !L[j] || !cm.get(n).has(L[j]));
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const L = base.slice(); let steps = 0;
+    const cons = shuffle(rest.filter(n => cm.has(n))).sort((a, b) => cm.get(b).size - cm.get(a).size);
+    const place = k => {
+      if (k === cons.length) return true;
+      if (++steps > 40000) return false;
+      const n = cons[k];
+      for (const i of shuffle(free.filter(i => L[i] === null))) {
+        if (okAt(L, i, n)) { L[i] = n; if (place(k + 1)) return true; L[i] = null; }
+      }
+      return false;
+    };
+    if (!place(0)) continue;
+    const open = shuffle(free.filter(i => L[i] === null));
+    shuffle(rest.filter(n => !cm.has(n))).forEach((n, k) => { L[open[k]] = n; });
+    pushUndo(); S.layout = L; sel = null; save(); render(true);
+    return;
+  }
+  status('warn', '조건을 모두 지키는 배치를 찾지 못했어요. 이웃 범위를 좁히거나, 고정 자리·빈자리·금지 묶음을 줄여 보세요.');
+}
+
+function pushUndo() { if (S.layout.length) { undoStack.push(S.layout.slice()); if (undoStack.length > 20) undoStack.shift(); } }
+
+function seatClick(i) {
+  if (editMode) {
+    if (isOff(i)) S.disabled = S.disabled.filter(x => x !== i);
+    else {
+      S.disabled.push(i);
+      delete S.fixed[i];
+      const n = S.layout[i];
+      if (n) { S.layout[i] = null; const to = S.layout.findIndex((x, j) => !x && !isOff(j)); if (to >= 0) S.layout[to] = n; }
+    }
+    save(); render(); return;
+  }
+  if (isOff(i)) return;
+  if (sel === null) {
+    if (!S.layout[i]) return toast('옮길 학생 자리를 먼저 눌러주세요.');
+    if (S.fixed[i] != null) return toast('고정된 자리예요. 자물쇠를 눌러 풀면 옮길 수 있어요.');
+    sel = i; renderBoard(); return;
+  }
+  if (sel === i) { sel = null; renderBoard(); return; }
+  if (S.fixed[i] != null) return toast('고정된 자리와는 바꿀 수 없어요.');
+  pushUndo();
+  [S.layout[sel], S.layout[i]] = [S.layout[i], S.layout[sel]];
+  sel = null; save(); render();
+}
+function toggleFix(i) {
+  if (S.fixed[i] != null) delete S.fixed[i]; else S.fixed[i] = S.layout[i];
+  if (sel === i) sel = null;
+  save(); renderBoard();
+}
+
+function status(kind, html) { const s = $('#status'); s.className = kind; s.innerHTML = html; }
+function renderStatus() {
+  if (!S.layout.length) return status('', '학생 명단을 확인하고 \'자리 배치하기\'를 눌러주세요.');
+  const v = violations(), u = unplaced(), msgs = [];
+  if (u.length) msgs.push(`자리가 없는 학생: <b>${u.map(esc).join(', ')}</b>`);
+  if (v.length) msgs.push('이웃 금지 위반: ' + v.map(x => `<b>${esc(x.a)}</b>–<b>${esc(x.b)}</b>`).join(', '));
+  if (msgs.length) status('warn', '⚠ ' + msgs.join('<br>'));
+  else status('ok', S.groups.length ? `✓ 이웃 금지 조건 ${S.groups.length}묶음을 모두 지켰어요.` : '✓ 배치를 마쳤어요. 두 자리를 차례로 누르면 서로 바꿀 수 있어요.');
+}
+
+function renderBoard(animate) {
+  const teacher = S.view === 'teacher';
+  const rows = [...Array(S.rows).keys()], cols = [...Array(S.cols).keys()];
+  if (teacher) { rows.reverse(); cols.reverse(); }
+  const bad = new Set(violations().flatMap(v => [v.i, v.j]));
+  let k = 0;
+  const front = `<div class="front${teacher ? ' bottom' : ''}">칠판 · 교탁<small>${teacher ? '교사 시점 (교탁에서 바라본 모습)' : '학생 시점 (뒤에서 칠판을 바라본 모습)'}</small></div>`;
+  const body = rows.map(r => '<div class="drow">' + cols.map((c, idx) => {
+    const gap = idx > 0 && Math.min(cols[idx - 1], c) % 2 === 1 ? '<div class="aisle"></div>' : '';
+    const i = r * S.cols + c, n = S.layout[i], off = isOff(i);
+    const cls = ['seat', off ? 'off' : (!n ? 'empty' : ''), bad.has(i) ? 'bad' : '', S.fixed[i] != null && !off ? 'fixed' : '', sel === i ? 'sel' : '', animate && n && !off ? 'pop' : ''].filter(Boolean).join(' ');
+    const delay = animate && n && !off ? ` style="animation-delay:${(k++) * 30}ms"` : '';
+    const lock = n && !off && !editMode ? `<span class="lock" data-lock="${i}" title="${S.fixed[i] != null ? '고정 풀기' : '이 자리에 고정'}">${LOCK}</span>` : '';
+    return `${gap}<button type="button" class="${cls}" data-i="${i}"${delay} aria-label="${r + 1}줄 ${c + 1}열 ${off ? '사용 안 함' : esc(n || '빈자리')}"><span class="no">${r + 1}-${c + 1}</span><span class="nm">${off ? '사용 안 함' : (n ? esc(n) : '빈자리')}</span>${lock}</button>`;
+  }).join('') + '</div>').join('');
+  $('#board').innerHTML = (teacher ? '' : front) + `<div class="rows">${body}</div>` + (teacher ? front : '');
+  renderStatus();
+}
+
+function renderSide() {
+  $('#nameCount').textContent = `${S.students.length}명`;
+  const usable = total() - S.disabled.length;
+  $('#count').textContent = `학생 ${S.students.length}명 · 사용 자리 ${usable}석 / 전체 ${S.rows}줄×${S.cols}열`;
+  $('#chips').innerHTML = S.students.map(n => `<button type="button" class="chip${picked.has(n) ? ' on' : ''}" data-n="${esc(n)}">${esc(n)}</button>`).join('');
+  $('#addGroup').disabled = picked.size < 2;
+  $('#addGroup').textContent = picked.size >= 2 ? `선택한 ${picked.size}명 떨어뜨리기` : '선택한 학생 떨어뜨리기';
+  $('#groups').innerHTML = S.groups.map((g, i) => `<li><span>${g.map(esc).join(' · ')}</span><button type="button" data-del="${i}">삭제</button></li>`).join('') || '<li style="background:var(--off)"><span>아직 없어요.</span></li>';
+  $('#adj').value = S.adj; $('#rows').value = S.rows; $('#cols').value = S.cols;
+  $('#vStudent').classList.toggle('on', S.view === 'student');
+  $('#vTeacher').classList.toggle('on', S.view === 'teacher');
+  $('#undo').disabled = !undoStack.length;
+  $('#edit').textContent = editMode ? '설정 완료' : '빈자리 설정';
+  $('#wrap').classList.toggle('editing', editMode);
+  $('#title').value = S.title;
+}
+function render(animate) { renderSide(); renderBoard(animate); }
+
+function applyNames(list) {
+  const names = list.map(s => s.trim()).filter(Boolean);
+  const dup = names.filter((n, i) => names.indexOf(n) !== i);
+  if (dup.length) return toast(`이름이 겹쳐요: ${[...new Set(dup)].join(', ')}`);
+  S.students = names;
+  S.groups = S.groups.map(g => g.filter(n => names.includes(n))).filter(g => g.length >= 2);
+  for (const k of Object.keys(S.fixed)) if (!names.includes(S.fixed[k])) delete S.fixed[k];
+  S.layout = S.layout.map(n => names.includes(n) ? n : null);
+  picked = new Set([...picked].filter(n => names.includes(n)));
+  save(); render(); toast(`명단 ${names.length}명을 반영했어요.`);
+}
+function resize() {
+  const r = Math.max(1, Math.min(10, +$('#rows').value || 5)), c = Math.max(1, Math.min(10, +$('#cols').value || 6));
+  if (r === S.rows && c === S.cols) return;
+  S.rows = r; S.cols = c; S.disabled = []; S.fixed = {}; S.layout = []; undoStack = []; sel = null;
+  save(); render(); toast('책상 배열이 바뀌어 배치를 새로 시작해요.');
+}
+
+$('#names').value = S.students.join('\n');
+$('#applyNames').onclick = () => applyNames($('#names').value.split('\n'));
+$('#fillNums').onclick = () => { const n = S.students.length || 26; $('#names').value = Array.from({length: n}, (_, i) => `${i + 1}번`).join('\n'); };
+$('#chips').onclick = e => { const b = e.target.closest('[data-n]'); if (!b) return; const n = b.dataset.n; picked.has(n) ? picked.delete(n) : picked.add(n); renderSide(); };
+$('#addGroup').onclick = () => { if (picked.size < 2) return; S.groups.push([...picked]); picked.clear(); save(); render(); };
+$('#groups').onclick = e => { const b = e.target.closest('[data-del]'); if (!b) return; S.groups.splice(+b.dataset.del, 1); save(); render(); };
+$('#adj').onchange = e => { S.adj = e.target.value; save(); render(); };
+$('#rows').onchange = resize; $('#cols').onchange = resize;
+$('#title').oninput = e => { S.title = e.target.value; save(); };
+$('#go').onclick = () => { if (editMode) { editMode = false; } generate(); };
+$('#undo').onclick = () => { if (!undoStack.length) return; S.layout = undoStack.pop(); sel = null; save(); render(); };
+$('#edit').onclick = () => { editMode = !editMode; sel = null; render(); };
+$('#vStudent').onclick = () => { S.view = 'student'; save(); render(); };
+$('#vTeacher').onclick = () => { S.view = 'teacher'; save(); render(); };
+$('#clear').onclick = () => { pushUndo(); S.layout = []; S.fixed = {}; sel = null; save(); render(); toast('배치와 고정 자리를 비웠어요. 되돌리기로 복구할 수 있어요.'); };
+$('#board').onclick = e => {
+  const lk = e.target.closest('[data-lock]');
+  if (lk) { e.stopPropagation(); toggleFix(+lk.dataset.lock); return; }
+  const s = e.target.closest('[data-i]'); if (s) seatClick(+s.dataset.i);
+};
+$('#copy').onclick = async () => {
+  if (!S.layout.length) return toast('먼저 자리를 배치해 주세요.');
+  const lines = [S.title, '[칠판]'];
+  for (let r = 0; r < S.rows; r++) lines.push([...Array(S.cols).keys()].map(c => { const i = r * S.cols + c; return isOff(i) ? '-' : (S.layout[i] || '(빈자리)'); }).join('\t'));
+  try { await navigator.clipboard.writeText(lines.join('\n')); toast('복사했어요. 엑셀이나 한글에 붙여넣을 수 있어요.'); }
+  catch (e) { toast('복사가 막혀 있어요. 화면을 캡처해 주세요.'); }
+};
+const framed = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+if (framed) $('#print').style.display = 'none';
+$('#print').onclick = () => { try { window.print(); } catch (e) {} };
+render();
+}
+</script>
+</body>
+</html>
